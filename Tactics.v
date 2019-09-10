@@ -74,7 +74,9 @@ Theorem silly_ex :
      oddb 3 = true ->
      evenb 4 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply H0.
+Qed.
 (** [] *)
 
 (** To use the [apply] tactic, the (conclusion of the) fact
@@ -107,7 +109,10 @@ Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  replace (l') with (rev (rev l')). rewrite H. reflexivity.
+  apply rev_involutive.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)  
@@ -176,7 +181,11 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply trans_eq with (m:=m).
+  apply H0.
+  apply H.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -273,7 +282,11 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   y :: l = x :: j ->
   x = y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  injection H0. intros.
+  symmetry.
+  apply H2.
+Qed.
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness?
@@ -345,7 +358,9 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  discriminate H.
+Qed.
 (** [] *)
 
 (** The injectivity of constructors allows us to reason that
@@ -420,7 +435,12 @@ Theorem plus_n_n_injective : forall n m,
      n = m.
 Proof.
   intros n. induction n as [| n'].
-  (* FILL IN HERE *) Admitted.
+  - destruct m. reflexivity. discriminate.
+  - intros m H. destruct m.
+    + discriminate.
+    + rewrite <- plus_n_Sm in H. rewrite <- plus_n_Sm in H. simpl in H.
+      injection H. intros. apply IHn' in H0. rewrite H0. reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -563,7 +583,7 @@ Proof.
     performed automatically by the [apply] in the next step), then
     [IHn'] gives us exactly what we need to finish the proof. *)
 
-      apply IHn'. injection eq as goal. apply goal. Qed.
+      apply IHn'. simpl in eq. injection eq as goal. apply goal. Qed.
 
 (** What you should take away from all this is that we need to be
     careful, when using induction, that we are not trying to prove
@@ -576,8 +596,16 @@ Proof.
 (** **** Exercise: 2 stars, standard (eqb_true)  *)
 Theorem eqb_true : forall n m,
     n =? m = true -> n = m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. 
+  intros n. induction n as [| n'].
+  - (* n = O *) simpl. intros m eq. destruct m as [| m'] eqn:E.
+    + (* m = O *) reflexivity.
+    + (* m = S m' *) discriminate eq.
+
+  - (* n = S n' *) simpl. intros m eq. destruct m as [| m'] eqn:E.
+    + (* m = O *) discriminate eq.
+    + (* m = S m' *) apply IHn' in eq. apply f_equal. apply eq.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (eqb_true_informal)  
@@ -707,7 +735,15 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
      length l = n ->
      nth_error l n = None.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n X l.
+  generalize dependent n.
+  induction l.
+  - simpl. destruct n. reflexivity. intros eq. discriminate eq.
+  - simpl. destruct n.
+    + simpl. discriminate.
+    + simpl. intros eq. injection eq. intros.
+      apply IHl in H. apply H.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -892,7 +928,21 @@ Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X Y l.
+  induction l as [| x t].
+  - intros.
+    inversion H.
+    reflexivity.
+  - intros.
+    inversion H.
+    destruct x.
+    destruct (split t).
+    inversion H1.
+    simpl.
+    apply f_equal.
+    apply IHt.
+    reflexivity.
+Qed.
 (** [] *)
 
 (** The [eqn:] part of the [destruct] tactic is optional: We've chosen
@@ -968,7 +1018,15 @@ Theorem bool_fn_applied_thrice :
   forall (f : bool -> bool) (b : bool),
   f (f (f b)) = f b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  destruct b.
+  - destruct (f true) eqn:e.
+    + rewrite e. apply e.
+    + destruct (f false) eqn:ee. apply e. apply ee.
+  - destruct (f false) eqn:e.
+    + destruct (f true) eqn:ee. apply ee. apply e.
+    + rewrite e. apply e.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -1044,7 +1102,7 @@ Proof.
 Theorem eqb_sym : forall (n m : nat),
   (n =? m) = (m =? n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (eqb_sym_informal)  
