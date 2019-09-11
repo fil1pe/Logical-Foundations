@@ -435,9 +435,9 @@ Theorem plus_n_n_injective : forall n m,
      n = m.
 Proof.
   intros n. induction n as [| n'].
-  - destruct m. reflexivity. discriminate.
+  - destruct m. reflexivity. intros. discriminate H.
   - intros m H. destruct m.
-    + discriminate.
+    + discriminate H.
     + rewrite <- plus_n_Sm in H. rewrite <- plus_n_Sm in H. simpl in H.
       injection H. intros. apply IHn' in H0. rewrite H0. reflexivity.
 Qed.
@@ -929,19 +929,10 @@ Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   combine l1 l2 = l.
 Proof.
   intros X Y l.
-  induction l as [| x t].
-  - intros.
-    inversion H.
-    reflexivity.
-  - intros.
-    inversion H.
-    destruct x.
-    destruct (split t).
-    inversion H1.
-    simpl.
-    apply f_equal.
-    apply IHt.
-    reflexivity.
+  induction l.
+  - simpl. intros. injection H. intros. rewrite <- H0, <- H1. simpl. reflexivity.
+  - intros. simpl in H. destruct x. destruct (split l). injection H. intros.
+    rewrite <- H0, <- H1. simpl. apply f_equal. apply IHl. reflexivity.
 Qed.
 (** [] *)
 
@@ -1102,7 +1093,13 @@ Qed.
 Theorem eqb_sym : forall (n m : nat),
   (n =? m) = (m =? n).
 Proof.
-  intros.
+  intros n.
+  induction n.
+  - intros. destruct m. reflexivity. reflexivity.
+  - intros. destruct m.
+    * reflexivity.
+    * simpl. apply IHn.
+Qed. 
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (eqb_sym_informal)  
@@ -1123,7 +1120,19 @@ Theorem eqb_trans : forall n m p,
   m =? p = true ->
   n =? p = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n.
+  induction n.
+  - intros. destruct m, p.
+    * reflexivity.
+    * rewrite H0. reflexivity.
+    * reflexivity.
+    * simpl. discriminate H.
+  - intros. destruct m, p.
+    * discriminate H.
+    * discriminate H0.
+    * discriminate H0.
+    * simpl. simpl in H, H0. apply IHn with (m:=m). apply H. apply H0.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (split_combine)  
@@ -1140,14 +1149,25 @@ Proof.
     things than necessary.  Hint: what property do you need of [l1]
     and [l2] for [split (combine l1 l2) = (l1,l2)] to be true?) *)
 
-Definition split_combine_statement : Prop
-  (* ("[: Prop]" means that we are giving a name to a
-     logical proposition here.) *)
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition split_combine_statement : Prop :=
+  forall X Y (l : list (X * Y)) l1 l2,
+  combine l1 l2 = l -> split l = (l1, l2).
 
 Theorem split_combine : split_combine_statement.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold split_combine_statement.
+  intros X Y l.
+  induction l.
+  - admit.
+  - intros. destruct l1, l2.
+    * simpl in H. rewrite <- H. reflexivity.
+    * simpl in H. discriminate H.
+    * simpl in H. discriminate H.
+    * simpl in H. injection H. intros. apply IHl in H0.
+      simpl. destruct x, (split l).
+      injection H0. injection H1. intros.
+      rewrite H2, H3, H4, H5. reflexivity.
+Admitted.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_split_combine : option (nat*string) := None.
@@ -1163,7 +1183,10 @@ Theorem filter_exercise : forall (X : Type) (test : X -> bool)
      filter test l = x :: lf ->
      test x = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X test x l.
+  induction l.
+  - admit.
+  - intros.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, recommended (forall_exists_challenge)  
