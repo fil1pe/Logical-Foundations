@@ -1326,6 +1326,15 @@ Proof.
 Qed.
 
 (** **** Exercise: 3 stars, standard (evenb_double_conv)  *)
+Theorem evenSb_not_evenbn : forall n,
+  evenb (S n) = negb (evenb n).
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl (evenb (S (S n))). rewrite IHn. rewrite negb_involutive. reflexivity.
+Qed.
+
 Theorem evenb_double_conv : forall n,
   exists k, n = if evenb n then double k
                 else S (double k).
@@ -1333,7 +1342,13 @@ Proof.
   intros.
   induction n.
   - exists 0. reflexivity.
-  - ??????????
+  - assert (H: evenb (S n) = negb (evenb n)). apply evenSb_not_evenbn.
+    destruct (evenb n).
+    + simpl (negb true) in H. rewrite H. destruct IHn. exists x.
+      rewrite H0. reflexivity.
+    + simpl (negb false) in H. rewrite H. destruct IHn. exists (S x).
+      simpl. rewrite H0. reflexivity.
+Qed.
 (** [] *)
 
 Theorem even_bool_prop : forall n,
@@ -1491,12 +1506,23 @@ Qed.
 Lemma andb_true_iff : forall b1 b2:bool,
   b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  split.
+  - intros. destruct b1. destruct b2. split. reflexivity. reflexivity.
+    simpl in H. split. reflexivity. apply H.
+    simpl in H. split. apply H. destruct b2. reflexivity. apply H.
+  - intros [H1 H2]. rewrite H1, H2. reflexivity.
+Qed.
 
 Lemma orb_true_iff : forall b1 b2,
   b1 || b2 = true <-> b1 = true \/ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  split.
+  - intros. destruct b1. left. reflexivity. simpl in H. right. apply H.
+  - intros [H1 | H2]. rewrite H1. reflexivity. rewrite H2.
+    destruct b1. reflexivity. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (eqb_neq)  
@@ -1508,7 +1534,12 @@ Proof.
 Theorem eqb_neq : forall x y : nat,
   x =? y = false <-> x <> y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  rewrite <- eqb_eq.
+  split.
+  - unfold not. intros. rewrite H in H0. discriminate H0.
+  - intros. apply not_true_is_false in H. apply H.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (eqb_list)  
@@ -1520,15 +1551,33 @@ Proof.
     definition is correct, prove the lemma [eqb_list_true_iff]. *)
 
 Fixpoint eqb_list {A : Type} (eqb : A -> A -> bool)
-                  (l1 l2 : list A) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+                  (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  | nil, nil => true
+  | nil, _ => false
+  | _, nil => false
+  | x::l1', y::l2' => eqb x y && (eqb_list eqb l1' l2')
+  end.
 
 Lemma eqb_list_true_iff :
   forall A (eqb : A -> A -> bool),
     (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
     forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  split.
+  - generalize dependent l2. induction l1.
+    + intros. destruct l2. reflexivity. discriminate H0.
+    + intros. destruct l2. discriminate H0.
+      simpl in H0. apply andb_true_iff in H0. destruct H0.
+      apply H in H0. apply IHl1 in H1.
+      rewrite H0, H1. reflexivity.
+  - generalize dependent l2. induction l1.
+    + intros. rewrite <- H0. reflexivity.
+    + intros. destruct l2. discriminate H0. simpl.
+      injection H0 as H0 H1. apply H in H0.
+      rewrite H0. simpl. apply IHl1 in H1. apply H1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, recommended (All_forallb)  
@@ -1548,7 +1597,17 @@ Fixpoint forallb {X : Type} (test : X -> bool) (l : list X) : bool :=
 Theorem forallb_true_iff : forall X test (l : list X),
    forallb test l = true <-> All (fun x => test x = true) l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  split.
+  - induction l.
+    + intros. simpl. apply I.
+    + intros. simpl. simpl in H. apply andb_true_iff in H. destruct H.
+      split. apply H. apply IHl in H0. apply H0.
+  - induction l.
+    + intros. simpl. reflexivity.
+    + simpl. intros. destruct H.
+      apply andb_true_iff. split. apply H. apply IHl in H0. apply H0.
+Qed.
 
 (** Are there any important properties of the function [forallb] which
     are not captured by this specification? *)
@@ -1686,7 +1745,8 @@ Qed.
 Theorem excluded_middle_irrefutable: forall (P:Prop),
   ~ ~ (P \/ ~ P).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply (restricted_excluded_middle (P) (true)).
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (not_exists_dist)  
