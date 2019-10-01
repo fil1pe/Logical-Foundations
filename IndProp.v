@@ -528,8 +528,16 @@ Qed.
 Theorem ev_plus_plus : forall n m p,
   even (n+m) -> even (n+p) -> even (m+p).
 Proof.
-  intros.
-  ???????
+  intros n m p H0.
+  apply ev_ev__ev.
+  replace (even (n + p + (m + p))) with (even (p + p + (n + m))).
+  apply ev_sum.
+  - rewrite <- double_plus.
+    apply ev_double.
+  - apply H0.
+  - rewrite plus_swap. replace (m + p) with (p + m). rewrite plus_assoc.
+    rewrite plus_assoc. rewrite plus_assoc. reflexivity.
+    rewrite plus_comm. reflexivity.
 Qed.
 (** [] *)
 
@@ -619,18 +627,19 @@ Inductive next_even : nat -> nat -> Prop :=
     Define an inductive binary relation [total_relation] that holds
     between every pair of natural numbers. *)
 
-(* FILL IN HERE 
+Inductive nat_pair : nat -> nat -> Prop :=
+  | npair n m : nat_pair n m.
 
-    [] *)
+Theorem test_nat_pair : nat_pair 2 5.
+Proof. apply npair. Qed.
 
 (** **** Exercise: 2 stars, standard, optional (empty_relation)  
 
     Define an inductive binary relation [empty_relation] (on numbers)
     that never holds. *)
 
-(* FILL IN HERE 
-
-    [] *)
+Inductive impossible_num : nat -> Prop :=
+  | impos n (H: even 1) : impossible_num n.
 
 (** From the definition of [le], we can sketch the behaviors of
     [destruct], [inversion], and [induction] on a hypothesis [H]
@@ -652,45 +661,69 @@ Inductive next_even : nat -> nat -> Prop :=
 
 Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction H0. apply H.
+  apply le_S. apply IHle.
+Qed.
 
 Theorem O_le_n : forall n,
   0 <= n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n.
+  - apply le_n.
+  - apply le_S. apply IHn.
+Qed.
 
 Theorem n_le_m__Sn_le_Sm : forall n m,
   n <= m -> S n <= S m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction H.
+  + apply le_n.
+  + apply le_S. apply IHle.
+Qed.
 
 Theorem Sn_le_Sm__n_le_m : forall n m,
   S n <= S m -> n <= m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  ????????????
 
 Theorem le_plus_l : forall a b,
   a <= a + b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction a.
+  - apply O_le_n.
+  - simpl. apply n_le_m__Sn_le_Sm. apply IHa.
+Qed.
 
 Theorem plus_lt : forall n1 n2 m,
   n1 + n2 < m ->
   n1 < m /\ n2 < m.
 Proof.
- unfold lt.
- (* FILL IN HERE *) Admitted.
+  unfold lt.
+  intros. split.
+  - induction n2.
+    + rewrite <- plus_n_O in H. apply H.
+    + apply IHn2. apply le_S in H. apply Sn_le_Sm__n_le_m in H.
+      rewrite plus_comm in H. simpl in H. rewrite plus_comm in H.
+      apply H.
+  - induction n1.
+    + apply H.
+    + apply IHn1. apply le_S in H. apply Sn_le_Sm__n_le_m in H. apply H.
+Qed.
 
 Theorem lt_S : forall n m,
   n < m ->
   n < S m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold lt. intros. apply le_S in H. apply H.
+Qed.
 
 Theorem leb_complete : forall n m,
   n <=? m = true -> n <= m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  Admitted.
 
 (** Hint: The next one may be easiest to prove by induction on [m]. *)
 
