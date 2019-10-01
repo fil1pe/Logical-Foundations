@@ -686,7 +686,13 @@ Qed.
 Theorem Sn_le_Sm__n_le_m : forall n m,
   S n <= S m -> n <= m.
 Proof.
-  ????????????
+  intros.
+  inversion H.
+  - apply le_n.
+  - apply le_trans with(n:=S n).
+    + apply le_S. apply le_n.
+    + apply H1.
+Qed.
 
 Theorem le_plus_l : forall a b,
   a <= a + b.
@@ -723,7 +729,14 @@ Qed.
 Theorem leb_complete : forall n m,
   n <=? m = true -> n <= m.
 Proof.
-  Admitted.
+  intros.
+  generalize dependent m.
+  induction n.
+  - intros. apply O_le_n.
+  - intros. destruct m.
+    + discriminate H.
+    + simpl in H. apply IHn in H. apply n_le_m__Sn_le_Sm in H. apply H.
+Qed.
 
 (** Hint: The next one may be easiest to prove by induction on [m]. *)
 
@@ -731,21 +744,36 @@ Theorem leb_correct : forall n m,
   n <= m ->
   n <=? m = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  generalize dependent m.
+  induction n.
+  - intros. reflexivity.
+  - intros. destruct m.
+    + inversion H.
+    + apply Sn_le_Sm__n_le_m in H. apply IHn in H. apply H.
+Qed.
 
 (** Hint: This one can easily be proved without using [induction]. *)
 
 Theorem leb_true_trans : forall n m o,
   n <=? m = true -> m <=? o = true -> n <=? o = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply leb_correct.
+  apply leb_complete in H.
+  apply leb_complete in H0.
+  apply le_trans with(n:=m). apply H. apply H0.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (leb_iff)  *)
 Theorem leb_iff : forall n m,
   n <=? m = true <-> n <= m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  apply leb_complete.
+  apply leb_correct.
+Qed.
 (** [] *)
 
 Module R.
@@ -764,8 +792,13 @@ Inductive R : nat -> nat -> nat -> Prop :=
    | c5 m n o (H : R m n o) : R n m o.
 
 (** - Which of the following propositions are provable?
-      - [R 1 1 2]
-      - [R 2 2 6]
+      - [R 1 1 2] <--
+      - [R 2 2 6] *)
+
+Theorem R_test : R 1 1 2.
+Proof. apply c2. apply c3. apply c1. Qed.
+
+(**
 
     - If we dropped constructor [c5] from the definition of [R],
       would the set of provable propositions change?  Briefly (1
@@ -788,12 +821,12 @@ Definition manual_grade_for_R_provability : option (nat*string) := None.
     Figure out which function; then state and prove this equivalence
     in Coq? *)
 
-Definition fR : nat -> nat -> nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition fR : nat -> nat -> nat := plus.
 
 Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  ????????????
 (** [] *)
 
 End R.
