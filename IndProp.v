@@ -825,8 +825,28 @@ Definition fR : nat -> nat -> nat := plus.
 
 Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
 Proof.
+  unfold fR.
   intros.
-  ????????????
+  split.
+    * intros. induction H.
+      - reflexivity.
+      - simpl. rewrite IHR. reflexivity.
+      - rewrite plus_comm. simpl. rewrite plus_comm. rewrite IHR. reflexivity.
+      - injection IHR. intros. rewrite plus_comm in H0. injection H0 as H0.
+        rewrite plus_comm in H0. apply H0.
+      - rewrite plus_comm. apply IHR.
+    * intros. generalize dependent o. induction n.
+      - intros. rewrite <- plus_n_O in H. rewrite H.
+        generalize dependent m.
+        induction o.
+        + intros. apply c1.
+        + intros. destruct m.
+          discriminate H.
+          inversion H. apply IHo in H1. apply c2. apply H1.
+      - intros. rewrite plus_comm in H. destruct o.
+          discriminate H.
+          apply c3. apply IHn. injection H. intros. rewrite plus_comm. apply H0.
+Qed.
 (** [] *)
 
 End R.
@@ -869,18 +889,42 @@ End R.
       Hint: choose your induction carefully! *)
 
 Inductive subseq : list nat -> list nat -> Prop :=
-(* FILL IN HERE *)
-.
+  | c1 : forall (l : list nat), subseq [] l
+  | c2 : forall (l1 l2 : list nat) (x : nat), subseq l1 l2 -> subseq l1 (x::l2)
+  | c3 : forall (l1 l2 : list nat) (x : nat), subseq l1 l2 -> subseq (x::l1) (x::l2).
 
 Theorem subseq_refl : forall (l : list nat), subseq l l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction l.
+  - apply c1.
+  - apply c3. apply IHl.
+Qed.
+
+Theorem subseq_app_aux : forall (x : nat) (l2 l3 : list nat),
+  (x :: l2) ++ l3 = x :: (l2 ++ l3).
+Proof.
+  intros.
+  replace (x::l2) with ([x]++l2).
+  replace (x::l2++l3) with ([x]++l2++l3).
+  rewrite app_assoc. reflexivity.
+  reflexivity.
+  reflexivity.
+Qed.
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l1 (l2 ++ l3).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  generalize dependent l1.
+  induction l2.
+  - intros. inversion H. apply c1.
+  - intros. inversion H. apply c1.
+      replace ((x :: l2) ++ l3) with (x :: (l2 ++ l3)). apply c2. apply IHl2. apply H2.
+      apply subseq_app_aux.
+      replace ((x :: l2) ++ l3) with (x :: (l2 ++ l3)). apply c3. apply IHl2. apply H2.
+      apply subseq_app_aux.
+Qed.
 
 Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
