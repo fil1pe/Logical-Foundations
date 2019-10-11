@@ -931,7 +931,16 @@ Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  generalize dependent l1.
+  induction H0.
+  - intros. inversion H. apply c1.
+  - intros. apply c2. apply IHsubseq. apply H.
+  - intros. inversion H.
+    + apply c1.
+    + apply c2. apply IHsubseq. apply H3.
+    + apply c3. apply IHsubseq. apply H3.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (R_provability2)  
@@ -1164,13 +1173,20 @@ Qed.
 Lemma empty_is_empty : forall T (s : list T),
   ~ (s =~ EmptySet).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not.
+  intros.
+  inversion H.
+Qed.
 
 Lemma MUnion' : forall T (s : list T) (re1 re2 : @reg_exp T),
   s =~ re1 \/ s =~ re2 ->
   s =~ Union re1 re2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  destruct H.
+  - apply MUnionL. apply H.
+  - apply MUnionR. apply H.
+Qed.
 
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
@@ -1181,7 +1197,13 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp),
   (forall s, In s ss -> s =~ re) ->
   fold app ss [] =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction ss.
+  - simpl. apply MStar0.
+  - simpl. apply MStarApp.
+    * apply H. simpl. left. reflexivity.
+    * apply IHss. intros. apply H. right. apply H0.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (reg_exp_of_list_spec)  
@@ -1192,7 +1214,24 @@ Proof.
 Lemma reg_exp_of_list_spec : forall T (s1 s2 : list T),
   s1 =~ reg_exp_of_list s2 <-> s1 = s2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  split.
+  * intros.
+    generalize dependent s1.
+    induction s2.
+    - intros. simpl in H. inversion H. reflexivity.
+    - intros. inversion H. apply IHs2 in H4. rewrite H4. inversion H3. reflexivity.
+  * intros.
+    generalize dependent s1.
+    induction s2.
+    - intros. rewrite H. apply MEmpty.
+    - intros. simpl. destruct s1.
+      + discriminate H.
+      + injection H as H. rewrite H. replace (x :: s1) with ([x] ++ s1).
+        apply MApp. apply MChar. apply IHs2. apply H0.
+        { reflexivity. }
+Qed.
+    
 (** [] *)
 
 (** Since the definition of [exp_match] has a recursive
@@ -1275,13 +1314,35 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char x => true
+  | App re1 re2 => re_not_empty re1 && re_not_empty re2
+  | Union re1 re2 => re_not_empty re1 || re_not_empty re2
+  | Star re => re_not_empty re
+  end.
 
 Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  * intros.
+    destruct H as [s].
+    generalize dependent s.
+    induction re.
+    - intros. inversion H.
+    - reflexivity.
+    - reflexivity.
+    - intros. simpl. inversion H. rewrite IHre1 with (s:=s1).
+      rewrite IHre2 with (s:=s2). reflexivity. apply H4. apply H3.
+    - intros. simpl. inversion H. rewrite IHre1 with (s:=s). reflexivity.
+      apply H2.
+      rewrite IHre2 with (s:=s). destruct (re_not_empty re1). reflexivity.
+      reflexivity. apply H1.
+    - ??????????????
+  * intros.
 (** [] *)
 
 (* ================================================================= *)
