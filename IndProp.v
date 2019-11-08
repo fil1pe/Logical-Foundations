@@ -1321,28 +1321,42 @@ Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool :=
   | Char x => true
   | App re1 re2 => re_not_empty re1 && re_not_empty re2
   | Union re1 re2 => re_not_empty re1 || re_not_empty re2
-  | Star re => re_not_empty re
+  | Star re => true
   end.
 
 Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
   split.
-  * intros.
-    destruct H as [s].
+  * intros [s].
     generalize dependent s.
     induction re.
     - intros. inversion H.
     - reflexivity.
     - reflexivity.
-    - intros. simpl. inversion H. rewrite IHre1 with (s:=s1).
-      rewrite IHre2 with (s:=s2). reflexivity. apply H4. apply H3.
-    - intros. simpl. inversion H. rewrite IHre1 with (s:=s). reflexivity.
-      apply H2.
-      rewrite IHre2 with (s:=s). destruct (re_not_empty re1). reflexivity.
-      reflexivity. apply H1.
-    - ??????????????
+    - intros. simpl. inversion H. apply IHre1 in H3. apply IHre2 in H4.
+      destruct (re_not_empty re1), (re_not_empty re2).
+      reflexivity. discriminate H4. discriminate H3. discriminate H4. 
+    - intros. simpl. inversion H. apply IHre1 in H2. rewrite H2. reflexivity.
+      apply IHre2 in H1. rewrite H1. destruct (re_not_empty re1). reflexivity. reflexivity.
+    - reflexivity.
   * intros.
+    induction re.
+    - discriminate H.
+    - exists []. apply MEmpty.
+    - exists [t]. apply MChar.
+    - simpl in H. assert (re_not_empty re1 = true). { destruct (re_not_empty re1). reflexivity. discriminate H. }
+                  assert (re_not_empty re2 = true). { destruct (re_not_empty re2). reflexivity. destruct (re_not_empty re1). discriminate H. discriminate H. }
+      apply IHre1 in H0. apply IHre2 in H1. destruct H0, H1.
+      exists (x ++ x0). apply MApp. apply H0. apply H1.
+    - simpl in H. assert (re_not_empty re1 = true \/ re_not_empty re2 = true).
+      { destruct (re_not_empty re1). left. reflexivity. destruct (re_not_empty re2).
+        right. reflexivity. discriminate H. }
+      destruct H0.
+      + apply IHre1 in H0. destruct H0. exists x. apply MUnionL. apply H0.
+      + apply IHre2 in H0. destruct H0. exists x. apply MUnionR. apply H0.
+    - exists []. apply MStar0.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1481,7 +1495,24 @@ Lemma MStar'' : forall T (s : list T) (re : reg_exp),
     s = fold app ss []
     /\ forall s', In s' ss -> s' =~ re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  remember (Star re).
+  induction H.
+  - inversion Heqr.
+  - inversion Heqr.
+  - inversion Heqr.
+  - inversion Heqr.
+  - inversion Heqr.
+  - exists []. split.
+    + reflexivity.
+    + intros. inversion H.
+  - inversion Heqr. apply IHexp_match2 in Heqr. destruct Heqr, H1.
+    exists (s1::x). split.
+    + simpl. rewrite H1. reflexivity.
+    + intros. simpl in H4. destruct H4.
+      * rewrite H2 in H. rewrite H4 in H. apply H.
+      * apply H3 in H4. apply H4.
+Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced (pumping)  
