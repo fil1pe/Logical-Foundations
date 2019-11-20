@@ -1588,6 +1588,12 @@ Lemma pumping : forall T (re : @reg_exp T) s,
 
 Import Coq.omega.Omega.
 
+Lemma sum_leq: forall (a b:nat), 1 <= a + b -> 1 <= a \/ 1 <= b.
+Proof.
+  intros.
+  omega.
+Qed.
+
 Proof.
   intros T re s Hmatch.
   induction Hmatch
@@ -1596,7 +1602,51 @@ Proof.
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. omega.
-  (* FILL IN HERE *) Admitted.
+
+  - simpl. omega.
+  - simpl. rewrite app_length. intros. Search (_ + _ <= _ + _). apply Nat.add_le_cases in H.
+    destruct H.
+    + apply IH1 in H. destruct H, H, H, H, H0. exists x, x0, (x1 ++ s2). split.
+      * rewrite H. rewrite <- app_assoc. rewrite <- app_assoc. reflexivity.
+      * split.
+        -- apply H0.
+        -- intros. rewrite app_assoc. rewrite app_assoc. apply MApp.
+          --- rewrite <- app_assoc. apply H1.
+          --- apply Hmatch2.
+    + (* semelhante ao '+' anterior *)
+      apply IH2 in H. destruct H, H, H, H, H0. exists (s1 ++ x), x0, x1. split.
+      * rewrite H. rewrite <- app_assoc. reflexivity.
+      * split.
+        -- apply H0.
+        -- intros. rewrite <- app_assoc. apply MApp.
+          --- apply Hmatch1.
+          --- apply H1.
+  - simpl. intros. assert (pumping_constant re1 <= length s1). { omega. }
+    apply IH in H0. destruct H0, H0, H0, H0, H1. exists x, x0, x1. split.
+    + apply H0.   + split.  * apply H1. * intros. apply MUnionL. apply H2.
+  - (* semelhante ao caso anterior *)
+    simpl. intros. assert (pumping_constant re2 <= length s2). { omega. }
+    apply IH in H0. destruct H0, H0, H0, H0, H1. exists x, x0, x1. split.
+    + apply H0.   + split.  * apply H1. * intros. apply MUnionR. apply H2.
+  - simpl. intros. inversion H.
+  - simpl. rewrite app_length. intros. apply sum_leq in H. destruct H.
+    + exists [], s1, s2. simpl. split.
+      * reflexivity.
+      * split.
+        -- unfold not. intros. rewrite H0 in H. inversion H.
+        -- intros. induction m.
+          --- apply Hmatch2.
+          --- simpl. rewrite <- app_assoc. apply MStarApp.
+              apply Hmatch1. apply IHm.
+    + apply IH2 in H. destruct H, H, H, H, H0. exists (s1 ++ x), x0, x1.
+      split.
+        * rewrite H. rewrite app_assoc. reflexivity.
+        * split.
+          -- apply H0.
+          -- intros. rewrite <- app_assoc. apply MStarApp.
+            --- apply Hmatch1.
+            --- apply H1.
+Qed.
 
 End Pumping.
 (** [] *)
@@ -1671,7 +1721,14 @@ Qed.
 (** **** Exercise: 2 stars, standard, recommended (reflect_iff)  *)
 Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  - intros. destruct b.
+    + reflexivity.
+    + inversion H. unfold not in H1. apply H1 in H0. destruct H0.
+  - intros. inversion H.
+    + apply H1.
+    + rewrite H0 in H2. discriminate H2.
+Qed.
 (** [] *)
 
 (** The advantage of [reflect] over the normal "if and only if"
@@ -1722,7 +1779,18 @@ Fixpoint count n l :=
 Theorem eqbP_practice : forall n l,
   count n l = 0 -> ~(In n l).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not. intros. induction l.
+  - simpl in H0. destruct H0.
+  - simpl in H0. simpl in H. destruct H0.
+    + symmetry in H0. destruct (eqbP n x).
+      * discriminate H.
+      * unfold not in H1. apply H1 in H0. destruct H0.
+    + destruct (eqbP n x).
+      * discriminate H.
+      * apply IHl in H.
+        -- apply H.
+        -- apply H0.
+Qed.
 (** [] *)
 
 (** This small example shows how reflection gives us a small gain in
@@ -1755,8 +1823,8 @@ Proof.
     [nostutter]. *)
 
 Inductive nostutter {X:Type} : list X -> Prop :=
- (* FILL IN HERE *)
-.
+  | st0 : nostutter []
+  | st1 a (l : list X) (H0: nostutter l) (H1: hd_error l <> Some a) : nostutter (a::l).
 (** Make sure each of these tests succeeds, but feel free to change
     the suggested proof (in comments) if the given one doesn't work
     for you.  Your definition might be different from ours and still
@@ -1768,27 +1836,34 @@ Inductive nostutter {X:Type} : list X -> Prop :=
     example with more basic tactics.)  *)
 
 Example test_nostutter_1: nostutter [3;1;4;1;5;6].
-(* FILL IN HERE *) Admitted.
+Proof. repeat (apply st1). apply st0.
+  - unfold not. intros. discriminate H.
+  - unfold not. intros. discriminate H.
+  - unfold not. intros. discriminate H.
+  - unfold not. intros. discriminate H.
+  - unfold not. intros. discriminate H.
+  - unfold not. intros. discriminate H.
+Qed.
 (* 
   Proof. repeat constructor; apply eqb_neq; auto.
   Qed.
 *)
 
 Example test_nostutter_2:  nostutter (@nil nat).
-(* FILL IN HERE *) Admitted.
+Proof. apply st0. Qed.
 (* 
   Proof. repeat constructor; apply eqb_neq; auto.
   Qed.
 *)
 
 Example test_nostutter_3:  nostutter [5].
-(* FILL IN HERE *) Admitted.
+Proof. apply st1. apply st0. unfold not. intros. discriminate H. Qed.
 (* 
   Proof. repeat constructor; apply eqb_false; auto. Qed.
 *)
 
 Example test_nostutter_4:      not (nostutter [3;1;1;4]).
-(* FILL IN HERE *) Admitted.
+Proof. unfold not. intros. inversion H. inversion H2. unfold not in H7. apply H7. reflexivity. Qed.
 (* 
   Proof. intro.
   repeat match goal with
