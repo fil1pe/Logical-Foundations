@@ -1,5 +1,6 @@
 define compile
 	coqc $(2)/$(1).v -Q $(2) $(3)
+	@find . -name ".$(1).vo.aux" -type f -delete
 endef
 
 define compile_lf
@@ -11,7 +12,6 @@ define compile_vfa
 endef
 
 all: lf vfa
-	@find . -name "*.aux" -type f -delete
 
 lf:
 	$(call compile_lf,Basics)
@@ -26,3 +26,4 @@ lf:
 vfa:
 	$(call compile_vfa,Perm)
 	$(call compile_vfa,Sort)
+	
