@@ -10,7 +10,8 @@ define compile_vfa
 	$(call compile,$(1),VerifiedFunctionalAlgorithms,VFA)
 endef
 
-all:
+all: lf vfa
+	@find . -name "*.aux" -type f -delete
 
 lf:
 	$(call compile_lf,Basics)
