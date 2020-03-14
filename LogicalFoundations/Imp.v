@@ -436,13 +436,27 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue       => BTrue
+  | BFalse      => BFalse
+  | BEq a1 a2   => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2   => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot b1     => BNot (optimize_0plus_b b1)
+  | BAnd b1 b2  => BAnd (optimize_0plus_b b1) (optimize_0plus_b b2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction b;
+  simpl;
+  try (rewrite optimize_0plus_sound, optimize_0plus_sound);
+  try (rewrite IHb);
+  try (rewrite IHb1, IHb2);
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)  
@@ -455,9 +469,23 @@ Proof.
     optimization and its correctness proof -- and build up to
     something more interesting incrementially.)  *)
 
-(* FILL IN HERE 
+Fixpoint optimize (a:aexp) : aexp :=
+  match a with
+  | ANum n => ANum n
+  | APlus  (ANum 0) e => optimize e
+  | APlus  e (ANum 0) => optimize e
+  | AMinus e (ANum 0) => optimize e
+  | APlus  e1 e2 => APlus  (optimize e1) (optimize e2)
+  | AMinus e1 e2 => AMinus (optimize e1) (optimize e2)
+  | AMult  e (ANum 1) => optimize e
+  | AMult  (ANum 1) e => optimize e
+  | AMult  e1 e2 => AMult  (optimize e1) (optimize e2)
+  end.
 
-    [] *)
+Theorem optimize_sound: forall a,
+  aeval (optimize a) = aeval a.
+Proof.
+Admitted.
 
 (* ================================================================= *)
 (** ** Defining New Tactic Notations *)
@@ -729,7 +757,6 @@ Inductive aevalR : aexp -> nat -> Prop :=
 
     Write out a corresponding definition of boolean evaluation as a
     relation (in inference rule notation). *)
-(* FILL IN HERE *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_beval_rules : option (nat*string) := None.
@@ -797,14 +824,32 @@ Qed.
     Write a relation [bevalR] in the same style as
     [aevalR], and prove that it is equivalent to [beval]. *)
 
-Inductive bevalR: bexp -> bool -> Prop :=
-(* FILL IN HERE *)
+Inductive bevalR : bexp -> bool -> Prop :=
+  | E_BTrue : bevalR BTrue true
+  | E_BFalse : bevalR BFalse false
+  | E_BEq (a1 a2:aexp) (n1 n2:nat) : (a1 \\ n1) -> (a2 \\ n2) ->
+                                     bevalR (BEq a1 a2) (n1 =? n2)
+  | E_BLe (a1 a2:aexp) (n1 n2:nat) : (a1 \\ n1) -> (a2 \\ n2) ->
+                                     bevalR (BLe a1 a2) (n1 <=? n2)
+  | E_BNot (e:bexp) (b:bool) : bevalR e b -> bevalR (BNot e) (negb b)
+  | E_BAnd (e1 e2:bexp) (b1 b2:bool) : bevalR e1 b1 -> bevalR e2 b2 ->
+                                       bevalR (BAnd e1 e2) (b1 && b2)
 .
 
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  - intros.
+    induction H; simpl; subst; try (apply aeval_iff_aevalR in H; apply aeval_iff_aevalR in H0);
+    auto.
+  - intros. generalize dependent bv.
+    induction b;
+    intros; subst; simpl; constructor;
+    try (apply aeval_iff_aevalR);
+    try (apply IHb); try (apply IHb1); try (apply IHb2);
+    try reflexivity.
+Qed.
 (** [] *)
 
 End AExp.
@@ -1469,7 +1514,12 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (X !-> 0).
+  - apply E_Ass. reflexivity.
+  - apply E_Seq with (Y !-> 1;X !-> 0).
+    + apply E_Ass. reflexivity.
+    + apply E_Ass. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (pup_to_n)  
@@ -1479,15 +1529,24 @@ Proof.
    Prove that this program executes as intended for [X] = [2]
    (this is trickier than you might expect). *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  Y ::= 0;;
+  WHILE 1 <= X DO
+    Y ::= Y + X;;
+    X ::= X - 1
+  END.
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold pup_to_n.
+  apply E_Seq with (Y !-> 0;X !-> 2).
+  - apply E_Ass. reflexivity.
+  - apply E_WhileTrue with (Y !-> 0;X !-> 2).
+    + reflexivity.
+    + Abort.
 (** [] *)
 
 (* ================================================================= *)
