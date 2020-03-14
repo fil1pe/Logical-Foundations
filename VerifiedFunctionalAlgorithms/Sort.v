@@ -118,7 +118,17 @@ Search Permutation.
 
 Lemma insert_perm: forall x l, Permutation (x::l) (insert x l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction l.
+  - simpl. apply Permutation_refl.
+  - simpl.
+    bdestruct (x <=? a).
+    + apply Permutation_refl.
+    + eapply perm_trans.
+      1: apply perm_swap.
+      apply perm_skip.
+      apply IHl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (sort_perm)  *)
@@ -126,7 +136,15 @@ Proof.
 
 Theorem sort_perm: forall l, Permutation l (sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction l.
+  - simpl. apply Permutation_refl.
+  - simpl.
+    eapply perm_trans.
+    2: apply insert_perm.
+    apply perm_skip.
+    apply IHl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars (insert_sorted)  *)
@@ -137,7 +155,21 @@ Proof.
 Lemma insert_sorted:
   forall a l, sorted l -> sorted (insert a l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction H.
+  - simpl. apply sorted_1.
+  - simpl.
+    bdestruct (a <=? x).
+    + apply sorted_cons. apply H. apply sorted_1.
+    + apply sorted_cons. omega. apply sorted_1.
+  - simpl.
+    bdestruct (a <=? x).
+    + apply sorted_cons. apply H1.
+      apply sorted_cons. apply H.
+      apply H0.
+    + simpl in IHsorted.
+      bdestruct (a <=? y); apply sorted_cons; try omega; apply IHsorted.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars (sort_sorted)  *)
@@ -145,7 +177,11 @@ Proof.
 
 Theorem sort_sorted: forall l, sorted (sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction l.
+  - simpl. apply sorted_nil.
+  - simpl. apply insert_sorted. apply IHl.
+Qed.
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -170,13 +206,34 @@ Qed.
 
 (** **** Exercise: 4 stars, optional (sorted_sorted')  *)
 Lemma sorted_sorted': forall al, sorted al -> sorted' al.
-
+Proof.
 (** Hint: Instead of doing induction on the list [al], do induction
     on the _sortedness_ of [al]. This proof is a bit tricky, so
     you may have to think about how to approach it, and try out
     one or two different ideas.*)
 
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction H; unfold sorted'; intros.
+  - destruct i, j; simpl; omega.
+  - simpl in H.
+    destruct i, j; simpl; omega.
+  - unfold sorted' in IHsorted.
+    destruct i.
+    + destruct j; simpl; try omega.
+      simpl. destruct j. apply H.
+      simpl in H1.
+      specialize (IHsorted 0 (S j)).
+      simpl in IHsorted.
+      assert (0 < S j < S (length l)). omega.
+      apply IHsorted in H2. omega.
+    + destruct j; try omega.
+      simpl in H1.
+      change (length (y :: l)) with (S (length l)) in IHsorted.
+      specialize (IHsorted i j).
+      assert (i < j < S (length l)). omega.
+      apply IHsorted in H2.
+      apply H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, optional (sorted'_sorted)  *)
@@ -186,7 +243,24 @@ Lemma sorted'_sorted: forall al, sorted' al -> sorted al.
     because [sorted'] is not an inductive predicate. *)
 
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction al.
+  - apply sorted_nil.
+  - destruct al. apply sorted_1.
+    apply sorted_cons.
+    * unfold sorted' in H.
+      specialize (H 0 1).
+      simpl in H.
+      apply H.
+      omega.
+    * apply IHal.
+      unfold sorted'; intros.
+      unfold sorted' in H.
+      specialize (H (S i) (S j)).
+      apply H.
+      simpl. simpl in H0.
+      omega.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -215,19 +289,96 @@ Lemma Forall_nth:
   forall {A: Type} (P: A -> Prop) d (al: list A),
      Forall P al <-> (forall i,  i < length al -> P (nth i al d)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  split; intros.
+  - generalize dependent i.
+    induction al; intros. inversion H0.
+    destruct i.
+    + simpl. apply Forall_inv in H. apply H.
+    + simpl.
+      apply IHal.
+      inversion H; auto.
+      simpl; simpl in H0.
+      omega.
+  - induction al. apply Forall_nil.
+    apply Forall_cons.
+    + specialize (H 0).
+      apply H.
+      simpl.
+      omega.
+    + apply IHal; intros.
+      specialize (H (S i)).
+      apply H.
+      simpl.
+      omega.
+Qed.
 (** [] *)
 
 
 (** **** Exercise: 4 stars, optional (insert_sorted')  *)
 Lemma insert_sorted':
   forall a l, sorted' l -> sorted' (insert a l).
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  induction l.
+  - unfold sorted'; simpl; intros; omega.
+  - simpl.
+    unfold sorted'. unfold sorted' in H; intros.
+    bdestruct (a <=? a0).
+    + destruct i, j. omega.
+      * simpl. destruct j. omega.
+        specialize (H 0 (S j)).
+        simpl in H.
+        assert (a0 <= nth j l 0). { apply H. simpl in H0. omega. }
+        omega.
+      * destruct i; omega.
+      * destruct j. omega.
+        destruct i; simpl.
+        1: specialize (H 0 (S j)).
+        2: specialize (H (S i) (S j)).
+        1-2: apply H; simpl; simpl in H0; omega.
+    + assert (sorted' (insert a l)). {
+        apply IHl.
+        unfold sorted'; intros.
+        specialize (H (S i0) (S j0)).
+        apply H.
+        simpl.
+        omega.
+      }
+      unfold sorted' in H2.
+      destruct i, j; simpl; try omega.
+      * destruct l eqn:eq_l. simpl in H0. destruct j; simpl; omega.
+        simpl. simpl in H0. simpl in H2.
+        bdestruct (a <=? n).
+        -- destruct j. simpl; omega.
+           destruct j. simpl; omega.
+           specialize (H 0 (S(S j))).
+           apply H.
+           simpl. simpl in H0. omega.
+        -- simpl. destruct j.
+           ++ specialize (H 0 1).
+              apply H.
+              simpl. simpl in H0. omega.
+           ++ assert (a0 <= n). { specialize (H 0 1). apply H. simpl. omega. }
+              assert (n <= nth j (insert a l0) 0). {
+                specialize (H2 0 (S j)). apply H2. simpl. simpl in H0. omega.
+              }
+              omega.
+      * specialize (H2 i j).
+        apply H2.
+        simpl in H0.
+        omega.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, optional (insert_sorted')  *)
 Theorem sort_sorted': forall l, sorted' (sort l).
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  induction l.
+  - unfold sorted'; simpl; intros; omega.
+  - simpl. apply insert_sorted'. apply IHl.
+Qed.
 (** [] *)
 
 (* ================================================================= *)

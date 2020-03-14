@@ -25,3 +25,4 @@ lf:
 
 vfa:
 	$(call compile_vfa,Perm)
+	$(call compile_vfa,Sort)
