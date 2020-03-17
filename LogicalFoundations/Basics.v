@@ -261,7 +261,7 @@ Notation "x && y" := (andb x y).
 Notation "x || y" := (orb x y).
 
 Example test_orb5:  false || false || true = true.
-Proof. simpl. reflexivity. Qed.
+Proof. simpl. reflexivity.  Qed.
 
 (** _A note on notation_: In [.v] files, we use square brackets
     to delimit fragments of Coq code within comments; this convention,
@@ -578,9 +578,9 @@ Check (S (S (S (S O)))).
 
 Definition minustwo (n : nat) : nat :=
   match n with
-    | O => O
-    | S O => O
-    | S (S n') => n'
+  | O => O
+  | S O => O
+  | S (S n') => n'
   end.
 
 Compute (minustwo 4).
@@ -641,8 +641,8 @@ Module NatPlayground2.
 
 Fixpoint plus (n : nat) (m : nat) : nat :=
   match n with
-    | O => m
-    | S n' => S (plus n' m)
+  | O => m
+  | S n' => S (plus n' m)
   end.
 
 (** Adding three to two now gives us five, as we'd expect. *)
@@ -691,8 +691,8 @@ End NatPlayground2.
 
 Fixpoint exp (base power : nat) : nat :=
   match power with
-    | O => S O
-    | S p => mult base (exp base p)
+  | O => S O
+  | S p => mult base (exp base p)
   end.
 
 (** **** Exercise: 1 star, standard (factorial)  
@@ -832,8 +832,7 @@ reflexivity. Qed.
     fact that can be read directly off the definition of [plus]. *)
 
 Theorem plus_O_n : forall n : nat, 0 + n = n.
-Proof.
-  intros n. simpl. reflexivity.  Qed.
+Proof. intros n. simpl. reflexivity.  Qed.
 
 (** (You may notice that the above statement looks different in
     the [.v] file in your IDE than it does in the HTML rendition in
@@ -852,8 +851,7 @@ Proof.
     theorem: *)
 
 Theorem plus_O_n' : forall n : nat, 0 + n = n.
-Proof.
-  intros n. reflexivity. Qed.
+Proof. intros n. reflexivity.  Qed.
 
 (** Moreover, it will be useful later to know that [reflexivity]
     does somewhat _more_ simplification than [simpl] does -- for
@@ -892,12 +890,10 @@ Proof.
 (** Other similar theorems can be proved with the same pattern. *)
 
 Theorem plus_1_l : forall n:nat, 1 + n = S n.
-Proof.
-  intros n. reflexivity.  Qed.
+Proof. intros n. reflexivity.  Qed.
 
 Theorem mult_0_l : forall n:nat, 0 * n = 0.
-Proof.
-  intros n. reflexivity.  Qed.
+Proof. intros n. reflexivity.  Qed.
 
 (** The [_l] suffix in the names of these theorems is
     pronounced "on the left." *)
@@ -1366,7 +1362,17 @@ Qed.
     to the previous one but where the second hypothesis says that the
     function [f] has the property that [f x = negb x]. *)
 
-(* FILL IN HERE *)
+Theorem negation_fn_applied_twice :
+  forall (f : bool -> bool),
+  (forall (x : bool), f x = negb x) ->
+  forall (b : bool), f (f b) = b.
+Proof.
+  intros.
+  rewrite H.
+  rewrite H.
+  apply negb_involutive.
+Qed.
+
 (* The [Import] statement on the next line tells Coq to use the
    standard library String module.  We'll use strings more in later
    chapters, but for the moment we just need syntax for literal
@@ -1449,15 +1455,12 @@ Compute incr (A (B Z)).
 Compute incr (B (B Z)).
 Compute incr (B (A (B Z))).
 
-Fixpoint aux_bin_to_nat (m:bin) (n:nat) : nat :=
-  match m with
-  | Z     => 0
-  | A m'  => aux_bin_to_nat (m') (2*n)
-  | B m'  => n + aux_bin_to_nat (m') (2*n)
-  end.
-
 Fixpoint bin_to_nat (m:bin) : nat :=
-  aux_bin_to_nat (m) (1).
+  match m with
+  | Z    => 0
+  | A m' => bin_to_nat m' + bin_to_nat m'
+  | B m' => 1 + bin_to_nat m' + bin_to_nat m'
+  end.
 
 (**    (b) Write five unit tests [test_bin_incr1], [test_bin_incr2], etc.
         for your increment and binary-to-unary functions.  (A "unit

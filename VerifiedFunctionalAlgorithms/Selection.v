@@ -121,13 +121,23 @@ Lemma select_perm: forall x l,
    Permutation (x::l) (y::r).
 Proof.
 
-(** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
-  method, along with the theorem [contents_perm].  If you do,
-  you'll still leave the statement of this theorem unchanged. *)
+  (** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
+    method, along with the theorem [contents_perm].  If you do,
+    you'll still leave the statement of this theorem unchanged. *)
 
-intros x l; revert x.
-induction l; intros; simpl in *.
-(* FILL IN HERE *) Admitted.
+  intros x l; revert x.
+  induction l; intros; simpl in *.
+
+  apply Permutation_refl.
+  destruct (x <=? a).
+  - specialize (IHl x). destruct (select x l) eqn:eq.
+    rewrite (perm_swap a). rewrite (perm_swap a).
+    apply perm_skip. apply IHl.
+  - specialize (IHl a). destruct (select a l) eqn:eq.
+    rewrite (perm_swap x).
+    apply perm_skip. apply IHl.
+
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (selection_sort_perm)  *)
@@ -139,12 +149,26 @@ Proof.
 (** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
   method, along with the theorem [same_contents_iff_perm]. *)
 
-(* FILL IN HERE *) Admitted.
+  intro n.
+  induction n; intros l H.
+  - destruct l. constructor. discriminate H.
+  - destruct l. constructor.
+    simpl. destruct (select n0 l) eqn:eq.
+    pose proof select_perm as H0; specialize (H0 n0 l); rewrite eq in H0.
+    eapply perm_trans. apply H0. apply perm_skip. apply IHn.
+    apply Permutation_length in H0. simpl in H0. simpl in H. rewrite H in H0.
+    injection H0. auto.
+
+Qed.
 
 Theorem selection_sort_perm:
   forall l, Permutation l (selection_sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold selection_sort.
+  intros.
+  apply selsort_perm.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (select_smallest)  *)
@@ -156,18 +180,44 @@ Lemma select_smallest_aux:
 Proof.
 (* Hint: no induction needed in this lemma.
    Just use existing lemmas about select, along with [Forall_perm] *)
-(* FILL IN HERE *) Admitted.
+
+  intros.
+  Check Forall_perm.
+  pose proof select_perm; specialize (H1 x al); rewrite H0 in H1.
+  Search Permutation.
+  apply Permutation_sym in H1.
+  eapply Forall_perm in H1.
+  Search Forall.
+  2: apply Forall_cons.
+  3: apply H.
+  2: simpl; omega.
+  apply Forall_inv in H1.
+  apply H1.
+
+Qed.
 
 Theorem select_smallest:
   forall x al y bl, select x al = (y,bl) ->
      Forall (fun z => y <= z) bl.
 Proof.
-intros x al; revert x; induction al; intros; simpl in *.
- (* FILL IN HERE *) admit.
-bdestruct (x <=? a).
-*
-destruct (select x al) eqn:?H.
- (* FILL IN HERE *) Admitted.
+  intros x al; revert x; induction al; intros; simpl in *.
+
+  injection H; intros. rewrite <- H0. Search Forall. apply Forall_nil.
+
+  bdestruct (x <=? a).
+
+  1:    destruct (select x al) eqn:?H.
+  2:    destruct (select a al) eqn:?H.
+  1-2:  destruct bl; try (apply Forall_nil);
+        injection H; intros;
+        pose H1 as H5; apply select_smallest_aux in H5;
+        pose H1 as H6; apply IHal in H6;
+        try (apply Forall_cons);
+        try (rewrite <- H3; rewrite <- H4; omega);
+        try (rewrite <- H2; rewrite <- H4; apply H6);
+        try (eapply IHal; apply H5).
+
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (selection_sort_sorted)  *)
@@ -178,7 +228,15 @@ Lemma selection_sort_sorted_aux:
    sorted (y :: selsort bl (length bl)).
 Proof.
  (* Hint: no induction needed.  Use lemmas selsort_perm and Forall_perm.*)
- (* FILL IN HERE *) Admitted.
+
+  intros.
+  destruct bl. apply sorted_1.
+  simpl. simpl in H.
+  destruct (select n bl) eqn:?H.
+  apply sorted_cons.
+  2: apply H.
+
+Admitted.
 
 Theorem selection_sort_sorted: forall al, sorted (selection_sort al).
 Proof.

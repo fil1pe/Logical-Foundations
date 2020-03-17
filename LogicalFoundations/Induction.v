@@ -429,7 +429,7 @@ Proof.
   - (* n = 0 *)
     reflexivity.
   - (* n = S n' *)
-    simpl. rewrite -> IHn'. reflexivity.   Qed.
+    simpl. rewrite -> IHn'. reflexivity.  Qed.
 
 (** ... and if you're used to Coq you may be able to step
     through the tactics one after the other in your mind and imagine
@@ -633,12 +633,11 @@ Proof.
   intros.
   induction p.
   - rewrite mult_0_r. rewrite mult_0_r. rewrite mult_0_r. reflexivity.
-  - rewrite mult_S. rewrite mult_S. rewrite mult_S. rewrite IHp.
-    assert (H: m + (n*p + m*p) = n*p + (m + m*p)).
-    { rewrite plus_swap. reflexivity. }
-    rewrite <- plus_assoc'.
-    rewrite H.
-    rewrite plus_assoc'.
+  - rewrite mult_S. rewrite mult_S. rewrite mult_S.
+    rewrite IHp.
+    rewrite <- plus_assoc.
+    rewrite (plus_swap m).
+    rewrite plus_assoc. rewrite plus_assoc.
     reflexivity.
 Qed.
 
@@ -685,10 +684,8 @@ Theorem plus_swap' : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
   intros.
-  rewrite plus_assoc'. rewrite plus_assoc'.
-  replace (n+m) with (m+n).
+  rewrite plus_swap.
   reflexivity.
-  { rewrite plus_comm. reflexivity. }
 Qed.
 
 (** [] *)
@@ -719,7 +716,33 @@ Qed.
     definitions to make the property easier to prove, feel free to
     do so! *)
 
-(* FILL IN HERE *)
+Inductive bin : Type :=
+  | Z
+  | A (n : bin)
+  | B (n : bin).
+
+Fixpoint incr (m:bin) : bin :=
+  match m with
+  | Z     => B Z
+  | A m'  => B m'
+  | B m'  => A (incr m')
+  end.
+
+Fixpoint bin_to_nat (m:bin) : nat :=
+  match m with
+  | Z    => 0
+  | A m' => bin_to_nat m' + bin_to_nat m'
+  | B m' => 1 + bin_to_nat m' + bin_to_nat m'
+  end.
+
+Theorem binary_commute : forall b, bin_to_nat (incr b) = S (bin_to_nat b).
+Proof.
+  intros.
+  induction b.
+  - reflexivity.
+  - reflexivity.
+  - simpl. rewrite IHb. simpl. rewrite <- plus_n_Sm. reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_commute : option (nat*string) := None.
@@ -734,8 +757,11 @@ Definition manual_grade_for_binary_commute : option (nat*string) := None.
     (a) First, write a function to convert natural numbers to binary
         numbers. *)
 
-Fixpoint nat_to_bin (n:nat) : bin
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint nat_to_bin (n:nat) : bin :=
+  match n with
+  | O => Z
+  | S n' => incr (nat_to_bin n')
+  end.
 
 (** Prove that, if we start with any [nat], convert it to binary, and
     convert it back, we get the same [nat] we started with.  (Hint: If
@@ -745,7 +771,11 @@ Fixpoint nat_to_bin (n:nat) : bin
 
 Theorem nat_bin_nat : forall n, bin_to_nat (nat_to_bin n) = n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl. rewrite binary_commute. rewrite IHn. reflexivity.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_binary_inverse_a : option (nat*string) := None.
