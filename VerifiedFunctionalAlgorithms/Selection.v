@@ -230,22 +230,66 @@ Proof.
  (* Hint: no induction needed.  Use lemmas selsort_perm and Forall_perm.*)
 
   intros.
-  destruct bl. apply sorted_1.
-  simpl. simpl in H.
-  destruct (select n bl) eqn:?H.
+  destruct (selsort bl (length bl)) eqn:?H. apply sorted_1.
   apply sorted_cons.
   2: apply H.
+  eapply Forall_perm in H0.
+  2: eapply selsort_perm; reflexivity.
+  rewrite H1 in H0.
+  Search Forall.
+  apply Forall_inv in H0.
+  apply H0.
 
-Admitted.
+Qed.
+
+Lemma select_length: forall l al n n0,
+  select n al = (n0, l) ->
+  length al = length l.
+Proof.
+  intro.
+  induction l; intros.
+  - destruct al. reflexivity.
+    simpl in H. destruct (n <=? n1).
+    1:    destruct (select n al).
+    2:    destruct (select n1 al).
+    1-2:  discriminate H.
+  - destruct al. simpl in H; discriminate H.
+    simpl; apply eq_S.
+    simpl in H; destruct (n <=? n1); eapply IHl.
+    1:    destruct (select n al) eqn:?H.
+    2:    destruct (select n1 al) eqn:?H.
+    1-2:  rewrite H0;
+          injection H; intros;
+          rewrite H3, H1;
+          reflexivity.
+Qed.
 
 Theorem selection_sort_sorted: forall al, sorted (selection_sort al).
 Proof.
-intros.
-unfold selection_sort.
-(* Hint: do induction on the [length] of al.
-    In the inductive case, use [select_smallest], [select_perm],
-    and [selection_sort_sorted_aux]. *)
- (* FILL IN HERE *) Admitted.
+  intros.
+  unfold selection_sort.
+  (* Hint: do induction on the [length] of al.
+      In the inductive case, use [select_smallest], [select_perm],
+      and [selection_sort_sorted_aux]. *)
+
+  remember (length al) as len. generalize dependent al.
+  induction len; intros; destruct al; try (apply sorted_nil).
+  simpl in Heqlen; injection Heqlen; intro H.
+  rewrite Heqlen.
+  simpl; destruct (select n al) eqn:?H.
+  assert (length l = len). {
+    rewrite H. symmetry. eapply select_length. apply H0.
+  }
+  apply select_smallest in H0.
+  eapply Forall_perm in H0.
+  2: apply selection_sort_perm.
+  rewrite <- H.
+  destruct (selsort l len) eqn:?H. apply sorted_1.
+  unfold selection_sort in H0. rewrite H1 in H0. rewrite H2 in H0.
+  apply sorted_cons.
+  - apply Forall_inv in H0. apply H0.
+  - rewrite <- H2. apply IHlen. symmetry. apply H1.
+Qed.
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -303,7 +347,18 @@ Proof.
   recursion equation [selsort'_equation] that is automatically
   defined by the [Function] command. *)
 
-(* FILL IN HERE *) Admitted.
+  intro.
+  induction n; intros; rewrite selsort'_equation.
+  - destruct l. constructor.
+    simpl in H. discriminate H.
+  - destruct l. constructor.
+    destruct (select n0 l) eqn:?H.
+    pose proof select_perm as H1; specialize (H1 n0 l); rewrite H0 in H1.
+    eapply Permutation_trans. apply H1. apply perm_skip.
+    apply Permutation_length in H1. simpl in H1. simpl in H. rewrite H in H1.
+    apply IHn. injection H1. auto.
+
+Qed.
 (** [] *)
 
 Eval compute in selsort' [3;1;4;1;5;9;2;6;5].

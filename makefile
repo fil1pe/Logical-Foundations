@@ -26,4 +26,4 @@ lf:
 vfa:
 	$(call compile_vfa,Perm)
 	$(call compile_vfa,Sort)
-	
+	$(call compile_vfa,Selection)
