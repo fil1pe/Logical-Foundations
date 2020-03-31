@@ -120,8 +120,7 @@ Proof. reflexivity. Qed.
 (** **** Exercise: 1 star, optional (t_apply_empty)  *)
 (** First, the empty map returns its default element for all keys: *)
 Lemma t_apply_empty:  forall A x v, @t_empty A v x = v.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_eq)  *)
@@ -132,7 +131,11 @@ Proof.
 Lemma t_update_eq : forall A (m: total_map A) x v,
   (t_update m x v) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update;
+  intros A m x v;
+  rewrite <- beq_nat_refl;
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_neq)  *)
@@ -145,7 +148,12 @@ Theorem t_update_neq : forall (X:Type) v x1 x2
   x1 <> x2 ->
   (t_update m x1 v) x2 = m x2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X v x1 x2 m H;
+  apply Nat.eqb_neq in H;
+  unfold t_update;
+  rewrite H;
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_shadow)  *)
@@ -159,7 +167,12 @@ Lemma t_update_shadow : forall A (m: total_map A) v1 v2 x,
     t_update (t_update m x v1) x v2
   = t_update m x v2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros A m v1 v2 x;
+  unfold t_update;
+  apply functional_extensionality; intro y;
+  destruct (x =? y);
+  reflexivity.
+Qed.
 (** [] *)
 
 (** For the final two lemmas about total maps, it's convenient to use
@@ -173,7 +186,13 @@ Proof.
 
 Lemma beq_idP : forall x y, reflect (x = y) (beq_nat x y).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x y;
+  destruct (beq_nat x y) eqn:H;
+  constructor;
+  try (apply Nat.eqb_eq);
+  try (apply Nat.eqb_neq);
+  auto.
+Qed.
 (** [] *)
 
 (** Now, given [id]s [x1] and [x2], we can use the [destruct (beq_idP
@@ -190,7 +209,12 @@ Proof.
 Theorem t_update_same : forall X x (m : total_map X),
   t_update m x (m x) = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x m;
+  apply functional_extensionality; intro y;
+  unfold t_update;
+  destruct (beq_idP x y);
+  auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, recommended (t_update_permute)  *)
@@ -204,7 +228,14 @@ Theorem t_update_permute : forall (X:Type) v1 v2 x1 x2
     (t_update (t_update m x2 v2) x1 v1)
   = (t_update (t_update m x1 v1) x2 v2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X v1 v2 x1 x2 m H;
+  unfold t_update;
+  apply functional_extensionality; intro y;
+  destruct (beq_idP x1 y);
+  destruct (beq_idP x2 y);
+  try (rewrite e, e0 in H; contradiction);
+  auto.
+Qed.
 (** [] *)
 
 (* ################################################################# *)

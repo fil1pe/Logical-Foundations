@@ -1,6 +1,7 @@
 define compile
 	coqc $(2)/$(1).v -Q $(2) $(3)
 	@find . -name ".$(1).vo.aux" -type f -delete
+    @find . -name "$(1).glob" -type f -delete
 endef
 
 define compile_lf
@@ -27,3 +28,4 @@ vfa:
 	$(call compile_vfa,Perm)
 	$(call compile_vfa,Sort)
 	$(call compile_vfa,Selection)
+	$(call compile_vfa,Maps)

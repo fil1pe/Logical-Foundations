@@ -1570,6 +1570,14 @@ Qed.
     a (constructive!) way to generate strings matching [re] that are
     as long as we like. *)
 
+Import Coq.omega.Omega.
+
+Lemma sum_leq: forall (a b:nat), 1 <= a + b -> 1 <= a \/ 1 <= b.
+Proof.
+  intros.
+  omega.
+Qed.
+
 Lemma pumping : forall T (re : @reg_exp T) s,
   s =~ re ->
   pumping_constant re <= length s ->
@@ -1586,13 +1594,13 @@ Lemma pumping : forall T (re : @reg_exp T) s,
     free to experiment with it now if you like.  The first case of the
     induction gives an example of how it is used. *)
 
-Import Coq.omega.Omega.
+(* Import Coq.omega.Omega.
 
 Lemma sum_leq: forall (a b:nat), 1 <= a + b -> 1 <= a \/ 1 <= b.
 Proof.
   intros.
   omega.
-Qed.
+Qed. *)
 
 Proof.
   intros T re s Hmatch.
@@ -2017,14 +2025,21 @@ Lemma in_split : forall (X:Type) (x:X) (l:list X),
   In x l ->
   exists l1 l2, l = l1 ++ x :: l2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction l.
+  - inversion H.
+  - destruct H.
+    + exists nil, l. rewrite H. intuition.
+    + apply IHl in H. destruct H as [l1 [l2 H]].
+      exists (x0::l1), l2. rewrite H. intuition.
+Qed.
+
 
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
 Inductive repeats {X:Type} : list X -> Prop :=
-  (* FILL IN HERE *)
-.
+  | r_ind l a : In a l \/ repeats l -> repeats (a::l).
 
 (** Now, here's a way to formalize the pigeonhole principle.  Suppose
     list [l2] represents a list of pigeonhole labels, and list [l1]
@@ -2045,8 +2060,48 @@ Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
    length l2 < length l1 ->
    repeats l1.
 Proof.
-   intros X l1. induction l1 as [|x l1' IHl1'].
-  (* FILL IN HERE *) Admitted.
+  intros X l1. induction l1 as [|x l1' IHl1'].
+
+  - intros. simpl in H1. inversion H1.
+
+  - unfold excluded_middle. intros.
+    destruct l2.
+    + specialize (H0 x). assert (In x (x :: l1')).
+      left. trivial.
+      apply H0 in H2. inversion H2.
+    + destruct (H (In x l1')).
+      * constructor. intuition.
+      * assert (In x (x0::l2)).
+        apply H0. left. trivial.
+        apply in_split in H3. destruct H3 as [l20 [l21 H3]].
+        assert (length l2 = length (l20 ++ l21)). {
+          rewrite app_length.
+          assert (length ([x0] ++ l2) = length (l20 ++ [x] ++ l21)).
+          replace ([x0] ++ l2) with (x0::l2). rewrite H3. trivial. trivial.
+          rewrite app_length, app_length, app_length in H4. Search (_ + (_ + _)).
+          rewrite PeanoNat.Nat.add_shuffle3 in H4. simpl in H4. injection H4. trivial.
+        }
+        assert (forall x, In x l1' -> In x (l20++l21)). {
+          clear IHl1' H H1 H4.
+          intros.
+          rewrite H3 in H0. clear H3.
+          assert (In x1 (l20 ++ x :: l21)). apply H0. right. trivial.
+          clear H0.
+          induction l20.
+          - simpl in H1. destruct H1.
+            + rewrite <- H0 in H. contradiction.
+            + simpl. trivial.
+          - destruct H1.
+            + left. trivial.
+            + right. apply IHl20. trivial.
+        }
+        constructor. right.
+        eapply IHl1'.
+        unfold excluded_middle. apply H.
+        apply H5.
+        simpl in H1. rewrite <- H4. unfold lt. unfold lt in H1.
+        apply Sn_le_Sm__n_le_m in H1. trivial.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_check_repeats : option (nat*string) := None.

@@ -1237,6 +1237,8 @@ Proof. reflexivity. Qed.
 Example test_forallb_3 : forallb evenb [0;2;4;5] = false.
 Proof. reflexivity. Qed.
 
+Definition eqb := Basics.eqb.
+
 Example test_forallb_4 : forallb (eqb 5) [] = true.
 Proof. reflexivity. Qed.
 
